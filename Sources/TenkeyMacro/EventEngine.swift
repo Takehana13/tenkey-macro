@@ -299,7 +299,36 @@ enum Recorder {
             }
             out.append(s)
         }
-        return out
+
+        // 3) 続けて打った数字（と「.」「-」）を 1 つの「文字入力」にまとめる
+        var merged: [MacroStep] = []
+        for s in out {
+            guard s.kind == .keyTap, s.flags & Hotkey.modifierMask == 0,
+                  let ch = typedChar(s.keyCode) else {
+                merged.append(s)
+                continue
+            }
+            if let last = merged.last, last.kind == .typeText,
+               last.useKeypad == KeyNames.isKeypad(s.keyCode) {
+                merged[merged.count - 1].text.append(ch)
+            } else {
+                var t = MacroStep(kind: .typeText)
+                t.delayMs = s.delayMs
+                t.text = String(ch)
+                t.useKeypad = KeyNames.isKeypad(s.keyCode)
+                merged.append(t)
+            }
+        }
+        return merged
+    }
+
+    /// 数字入力としてまとめる対象のキー
+    private static func typedChar(_ code: Int) -> Character? {
+        let map: [Int: Character] = [
+            82: "0", 83: "1", 84: "2", 85: "3", 86: "4", 87: "5", 88: "6", 89: "7", 91: "8", 92: "9", 65: ".", 78: "-",
+            29: "0", 18: "1", 19: "2", 20: "3", 21: "4", 23: "5", 22: "6", 26: "7", 28: "8", 25: "9", 47: ".",
+        ]
+        return map[code]
     }
 
     private static func near(_ a: MacroStep, _ b: MacroStep) -> Bool {

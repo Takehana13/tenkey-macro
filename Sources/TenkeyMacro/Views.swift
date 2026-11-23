@@ -280,6 +280,7 @@ struct MacroEditorView: View {
             s.x = p.x.rounded(); s.y = p.y.rounded()
         }
         if kind.usesKey { s.keyCode = 76 } // テンキーEnter
+        if kind == .typeText { s.text = "100" }
         if let sel = selectedStep, let i = index(of: sel) {
             macro.steps.insert(s, at: i + 1)
         } else {
@@ -388,6 +389,13 @@ struct StepRow: View {
             }
             .frame(minWidth: 140)
             .help("クリックしてから押したキーに変更（修飾キーも可）")
+        } else if step.kind == .typeText {
+            HStack(spacing: 6) {
+                TextField("例: 100", text: $step.text)
+                    .frame(width: 140)
+                Toggle("数字はテンキーで送る", isOn: $step.useKeypad)
+                    .help("オン：テンキーの数字キーとして送ります（日本語入力中でも半角になりやすい）。オフ：上段の数字キーで送ります")
+            }
         } else if step.kind == .scroll {
             HStack(spacing: 4) {
                 Text("縦")

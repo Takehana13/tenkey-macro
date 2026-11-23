@@ -31,6 +31,32 @@ enum KeyNames {
         106: "F16", 64: "F17", 79: "F18", 80: "F19", 90: "F20",
     ]
 
+    private static let topDigits: [Character: Int] = [
+        "0": 29, "1": 18, "2": 19, "3": 20, "4": 21, "5": 23, "6": 22, "7": 26, "8": 28, "9": 25,
+    ]
+    private static let padKeys: [Character: Int] = [
+        "0": 82, "1": 83, "2": 84, "3": 85, "4": 86, "5": 87, "6": 88, "7": 89, "8": 91, "9": 92,
+        ".": 65, "-": 78, "+": 69, "*": 67, "/": 75,
+    ]
+    /// US/JIS 配列で同じ位置にある記号だけ
+    private static let otherKeys: [Character: Int] = [
+        ".": 47, ",": 43, "-": 27, "/": 44, " ": 49,
+    ]
+    private static let letterCodes: [Character: Int] = [
+        "a": 0, "b": 11, "c": 8, "d": 2, "e": 14, "f": 3, "g": 5, "h": 4, "i": 34, "j": 38,
+        "k": 40, "l": 37, "m": 46, "n": 45, "o": 31, "p": 35, "q": 12, "r": 15, "s": 1, "t": 17,
+        "u": 32, "v": 9, "w": 13, "x": 7, "y": 16, "z": 6,
+    ]
+
+    /// 1 文字を打つためのキーコードと Shift の要否。キーで打てない文字は nil（直接文字として送る）。
+    static func keyStroke(for ch: Character, useKeypad: Bool) -> (code: Int, shift: Bool)? {
+        if useKeypad, let c = padKeys[ch] { return (c, false) }
+        if let c = topDigits[ch] ?? otherKeys[ch] { return (c, false) }
+        let lower = Character(ch.lowercased())
+        if let c = letterCodes[lower] { return (c, ch != lower) }
+        return nil
+    }
+
     static func name(for code: Int) -> String {
         names[code] ?? "キー#\(code)"
     }

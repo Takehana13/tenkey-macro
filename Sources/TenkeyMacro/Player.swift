@@ -123,8 +123,35 @@ final class Player {
             postKey(step.keyCode, down: true, flags: step.flags, source: source)
             Thread.sleep(forTimeInterval: Player.microGap)
             postKey(step.keyCode, down: false, flags: step.flags, source: source)
+        case .typeText:
+            // 全角数字（１０など）は半角にしてから打つ
+            let text = step.text.applyingTransform(.fullwidthToHalfwidth, reverse: false) ?? step.text
+            for ch in text {
+                if cancelled { return }
+                if let ks = KeyNames.keyStroke(for: ch, useKeypad: step.useKeypad) {
+                    let f = ks.shift ? CGEventFlags.maskShift.rawValue : 0
+                    postKey(ks.code, down: true, flags: f, source: source)
+                    Thread.sleep(forTimeInterval: Player.microGap)
+                    postKey(ks.code, down: false, flags: f, source: source)
+                } else {
+                    postUnicode(String(ch), source: source)
+                }
+                Thread.sleep(forTimeInterval: Player.microGap)
+            }
         case .wait:
             break
+        }
+    }
+
+    /// キー配列に無い文字はそのまま文字として送る
+    private func postUnicode(_ s: String, source: CGEventSource?) {
+        let utf16 = Array(s.utf16)
+        for down in [true, false] {
+            guard let e = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: down) else { continue }
+            e.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
+            e.flags = []
+            mark(e)
+            e.post(tap: .cghidEventTap)
         }
     }
 

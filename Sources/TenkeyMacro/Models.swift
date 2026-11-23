@@ -23,7 +23,7 @@ struct Hotkey: Codable, Hashable {
 }
 
 enum StepKind: String, Codable, CaseIterable, Identifiable {
-    case click, mouseDown, mouseUp, mouseMove, mouseDrag, scroll, keyTap, keyDown, keyUp, wait
+    case click, mouseDown, mouseUp, mouseMove, mouseDrag, scroll, typeText, keyTap, keyDown, keyUp, wait
 
     var id: String { rawValue }
 
@@ -35,6 +35,7 @@ enum StepKind: String, Codable, CaseIterable, Identifiable {
         case .mouseMove: return "マウス移動"
         case .mouseDrag: return "ドラッグ移動"
         case .scroll: return "スクロール"
+        case .typeText: return "文字入力"
         case .keyTap: return "キー入力"
         case .keyDown: return "キー押す"
         case .keyUp: return "キー離す"
@@ -67,6 +68,36 @@ struct MacroStep: Codable, Identifiable, Hashable {
     var flags: UInt64 = 0
     var scrollX: Int = 0
     var scrollY: Int = 0
+    /// 文字入力ステップで入力する文字列（例: "100"）
+    var text: String = ""
+    /// 文字入力で数字・「.」「-」をテンキーから送る
+    var useKeypad: Bool = true
+
+    init(kind: StepKind) {
+        self.kind = kind
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, kind, delayMs, x, y, button, clickCount, keyCode, flags, scrollX, scrollY, text, useKeypad
+    }
+
+    // 古い保存ファイル（項目が足りないもの）も読めるようにする
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        kind = try c.decodeIfPresent(StepKind.self, forKey: .kind) ?? .wait
+        delayMs = try c.decodeIfPresent(Int.self, forKey: .delayMs) ?? 0
+        x = try c.decodeIfPresent(Double.self, forKey: .x) ?? 0
+        y = try c.decodeIfPresent(Double.self, forKey: .y) ?? 0
+        button = try c.decodeIfPresent(MouseButton.self, forKey: .button) ?? .left
+        clickCount = try c.decodeIfPresent(Int.self, forKey: .clickCount) ?? 1
+        keyCode = try c.decodeIfPresent(Int.self, forKey: .keyCode) ?? 0
+        flags = try c.decodeIfPresent(UInt64.self, forKey: .flags) ?? 0
+        scrollX = try c.decodeIfPresent(Int.self, forKey: .scrollX) ?? 0
+        scrollY = try c.decodeIfPresent(Int.self, forKey: .scrollY) ?? 0
+        text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
+        useKeypad = try c.decodeIfPresent(Bool.self, forKey: .useKeypad) ?? true
+    }
 
     /// 同じ内容で新しい ID を持つコピー
     func duplicated() -> MacroStep {
