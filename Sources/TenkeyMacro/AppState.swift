@@ -236,7 +236,15 @@ final class AppState: ObservableObject {
     // MARK: - キー取得
 
     func beginCapture(_ id: String, apply: @escaping (_ keyCode: Int, _ flags: UInt64) -> Void) {
-        guard engineRunning else { message = "アクセシビリティの許可が必要です"; return }
+        guard engineRunning else {
+            let alert = NSAlert()
+            alert.messageText = "キーを設定できません"
+            alert.informativeText = "アクセシビリティの許可がまだ有効になっていないため、キー入力を受け取れません。\n\nシステム設定 → プライバシーとセキュリティ → アクセシビリティ で「TenkeyMacro」をオンにしてください。すでに一覧にある場合は、一度「−」で削除してから「＋」で /Applications/TenkeyMacro.app を追加し直してください。"
+            alert.addButton(withTitle: "システム設定を開く")
+            alert.addButton(withTitle: "閉じる")
+            if alert.runModal() == .alertFirstButtonReturn { openAccessibilitySettings() }
+            return
+        }
         if capturingID == id { cancelCapture(); return }
         capturingID = id
         message = "割り当てるキーを押してください（もう一度クリックで取り消し）"

@@ -355,10 +355,10 @@ struct StepRow: View {
     private var detail: some View {
         if step.kind.usesPosition {
             HStack(spacing: 4) {
-                Text("X")
-                TextField("", value: $step.x, format: .number.grouping(.never)).frame(width: 56)
-                Text("Y")
-                TextField("", value: $step.y, format: .number.grouping(.never)).frame(width: 56)
+                Text("X").fixedSize()
+                TextField("", value: $step.x, format: .number.grouping(.never)).frame(width: 52)
+                Text("Y").fixedSize()
+                TextField("", value: $step.y, format: .number.grouping(.never)).frame(width: 52)
                 Button {
                     app.capturePosition { p in step.x = p.x; step.y = p.y }
                 } label: { Image(systemName: "scope") }
