@@ -104,7 +104,22 @@ final class EventEngine {
     }
 
     func cancelCapture() {
-        lock.lock(); captureHandler = nil; lock.unlock()
+        lock.lock(); captureHandler = nil; pendingClearToken = nil; lock.unlock()
+    }
+
+    /// テンキーの Clear（Windows 用キーボードでは NumLock）
+    static let clearKey = 71
+    /// Clear の直後に別のキーが来るのを待つ時間
+    static let clearWait: TimeInterval = 0.25
+    private var pendingClearToken: UUID?
+
+    private func finishPendingClear(token: UUID, flags: UInt64) {
+        lock.lock()
+        guard pendingClearToken == token, let handler = captureHandler else { lock.unlock(); return }
+        pendingClearToken = nil
+        captureHandler = nil
+        lock.unlock()
+        DispatchQueue.main.async { handler(EventEngine.clearKey, flags) }
     }
 
     // MARK: - イベント処理（タップスレッド）
@@ -131,11 +146,23 @@ final class EventEngine {
 
             // キー割り当て待ち
             if let handler = captureHandler {
-                if !isRepeat {
-                    captureHandler = nil
-                    consumedKeyUps.insert(code)
-                    DispatchQueue.main.async { handler(code, rawFlags) }
+                if isRepeat { return nil }
+                consumedKeyUps.insert(code)
+                if code == EventEngine.clearKey {
+                    // 一部のキーボードはテンキーを押すたびに、先に Clear(NumLock) を自動で送ってくる。
+                    // 少し待って次のキーが来たらそちらを採用し、来なければ Clear 自体を割り当てる。
+                    if pendingClearToken == nil {
+                        let token = UUID()
+                        pendingClearToken = token
+                        DispatchQueue.global().asyncAfter(deadline: .now() + EventEngine.clearWait) { [weak self] in
+                            self?.finishPendingClear(token: token, flags: rawFlags)
+                        }
+                    }
+                    return nil
                 }
+                pendingClearToken = nil
+                captureHandler = nil
+                DispatchQueue.main.async { handler(code, rawFlags) }
                 return nil
             }
 
@@ -300,9 +327,27 @@ enum Recorder {
             out.append(s)
         }
 
+        // 2.5) キーボードがテンキーの前に自動で送ってくる Clear を取り除く
+        var noClear: [MacroStep] = []
+        var clearDelay = 0
+        for (i, s) in out.enumerated() {
+            if s.kind.usesKey, s.keyCode == EventEngine.clearKey, i + 1 < out.count {
+                let next = out[i + 1]
+                if next.kind.usesKey, KeyNames.isKeypad(next.keyCode), next.keyCode != EventEngine.clearKey,
+                   next.delayMs < Int(EventEngine.clearWait * 1000) {
+                    clearDelay += s.delayMs
+                    continue
+                }
+            }
+            var t = s
+            t.delayMs += clearDelay
+            clearDelay = 0
+            noClear.append(t)
+        }
+
         // 3) 続けて打った数字（と「.」「-」）を 1 つの「文字入力」にまとめる
         var merged: [MacroStep] = []
-        for s in out {
+        for s in noClear {
             guard s.kind == .keyTap, s.flags & Hotkey.modifierMask == 0,
                   let ch = typedChar(s.keyCode) else {
                 merged.append(s)
