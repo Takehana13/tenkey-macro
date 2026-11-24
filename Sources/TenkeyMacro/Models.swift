@@ -152,11 +152,13 @@ struct AppSettings: Codable, Equatable {
     var recordStopKey: Hotkey? = Hotkey(keyCode: 53) // Esc
     /// ホットキー ON/OFF 切替キー
     var toggleKey: Hotkey? = nil
+    /// テンキーの Clear キーを他のアプリに送らない（キーボードが自動で送る Clear による警告音を止める）
+    var blockClear = true
 
     init() {}
 
     enum CodingKeys: String, CodingKey {
-        case hotkeysEnabled, consumeHotkey, recordMouseMoves, stopKey, recordStopKey, toggleKey
+        case hotkeysEnabled, consumeHotkey, recordMouseMoves, stopKey, recordStopKey, toggleKey, blockClear
     }
 
     init(from decoder: Decoder) throws {
@@ -168,6 +170,7 @@ struct AppSettings: Codable, Equatable {
         stopKey = c.contains(.stopKey) ? try c.decodeIfPresent(Hotkey.self, forKey: .stopKey) : d.stopKey
         recordStopKey = c.contains(.recordStopKey) ? try c.decodeIfPresent(Hotkey.self, forKey: .recordStopKey) : d.recordStopKey
         toggleKey = c.contains(.toggleKey) ? try c.decodeIfPresent(Hotkey.self, forKey: .toggleKey) : d.toggleKey
+        blockClear = try c.decodeIfPresent(Bool.self, forKey: .blockClear) ?? d.blockClear
     }
 
     func encode(to encoder: Encoder) throws {
@@ -179,6 +182,7 @@ struct AppSettings: Codable, Equatable {
         try c.encode(stopKey, forKey: .stopKey)
         try c.encode(recordStopKey, forKey: .recordStopKey)
         try c.encode(toggleKey, forKey: .toggleKey)
+        try c.encode(blockClear, forKey: .blockClear)
     }
 }
 

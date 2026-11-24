@@ -177,6 +177,10 @@ final class EventEngine {
                     return nil
                 }
                 if !isRepeat { appendRecorded(type: type, event: event) }
+                if code == EventEngine.clearKey && settings.blockClear {
+                    consumedKeyUps.insert(code)
+                    return nil
+                }
                 return pass
             }
 
@@ -209,6 +213,11 @@ final class EventEngine {
                     consumedKeyUps.insert(code)
                     return nil
                 }
+            }
+            // Clear キーを止める（警告音対策）。Clear をマクロに割り当てている場合は上で処理済み。
+            if code == EventEngine.clearKey && settings.blockClear {
+                consumedKeyUps.insert(code)
+                return nil
             }
             return pass
 

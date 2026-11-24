@@ -426,6 +426,9 @@ struct SettingsView: View {
                 Toggle("ホットキーに使ったキーを他のアプリに送らない", isOn: $app.settings.consumeHotkey)
                 Text("オンのとき、例えばテンキー1をマクロに割り当てると、売買アプリには「1」が入力されません。")
                     .font(.caption).foregroundStyle(.secondary)
+                Toggle("テンキーの Clear キーを無効にする", isOn: $app.settings.blockClear)
+                Text("キーボードがテンキーの前に自動で送る Clear を止め、入力のたびに鳴る警告音を消します。テンキーマクロが起動している間だけ有効です。")
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle("記録時にマウスの移動も記録する", isOn: $app.settings.recordMouseMoves)
                 Text("通常はオフ（クリック位置だけ記録）がおすすめです。ドラッグは常に記録されます。")
                     .font(.caption).foregroundStyle(.secondary)
@@ -435,7 +438,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 460)
+        .frame(width: 520, height: 540)
     }
 
     private func keyRow(_ title: String, id: String, value: Binding<Hotkey?>) -> some View {
